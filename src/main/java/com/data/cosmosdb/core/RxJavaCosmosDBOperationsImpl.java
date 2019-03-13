@@ -2,14 +2,18 @@ package com.data.cosmosdb.core;
 
 import com.data.cosmosdb.client.CosmosDBAsyncClient;
 import com.data.cosmosdb.repository.SimpleReactiveCosmosDBRepository;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.microsoft.azure.cosmosdb.*;
 import com.microsoft.azure.cosmosdb.rx.AsyncDocumentClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import rx.Observable;
 import rx.schedulers.Schedulers;
@@ -24,10 +28,22 @@ public class RxJavaCosmosDBOperationsImpl implements RxJavaCosmosDBOperations {
 
     AsyncDocumentClient client = CosmosDBAsyncClient.getClient();
 
-    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-            .enableDefaultTyping()
-            .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS,true);
+//    ObjectMapper objectMapper = getInstance();
+//
+//    public static ObjectMapper getInstance() {
+//        SimpleModule module = new SimpleModule();
+//        module.addDeserializer(BaseCondition.class, new ConditionJsonDeserializer());
+//        module.addDeserializer(BaseRewardRule.class, new RewardRuleJsonDeserializer());
+//
+//        return new ObjectMapper()
+//            .registerModule(module)
+//            .registerModule(new JavaTimeModule())
+//            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+//            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//    }
 
+    @Autowired
+    ObjectMapper objectMapper;
 
     public String collectionLink;
 
@@ -40,19 +56,29 @@ public class RxJavaCosmosDBOperationsImpl implements RxJavaCosmosDBOperations {
     public <T> Observable<T> save(T objectToSave) {
 
         //log.info(" infraevent id={}, aggregateId = {}",((InfraEvent)objectToSave).getId(), ((InfraEvent)objectToSave).getAggregateId());
-        return (Observable<T>) client.createDocument(collectionLink,objectToSave,
-                new RequestOptions(),true).map(documentResourceResponse -> {
 
-            //return documentResourceResponse.getResource().toObject(objectToSave.getClass());
 
-//            try {
-//                return objectMapper.readValue(documentResourceResponse.getResource().toJson(), objectToSave.getClass());
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            return Observable.empty();
-            return objectToSave;
-        } );
+        try {
+            return (Observable<T>) client.createDocument(collectionLink,new Document(objectMapper.writeValueAsString(objectToSave)),
+                    new RequestOptions(),true).map(documentResourceResponse -> {
+
+                log.info("deserializing object {} ", documentResourceResponse);
+                log.info("object to save class {} ", objectToSave.getClass());
+
+
+                try {
+                    return objectMapper.readValue(documentResourceResponse.getResource().toJson(), objectToSave.getClass());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                return Observable.empty();
+                // return objectToSave;
+            } );
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return Observable.empty();
     }
     @Override
     public <T> Observable<T> update(T objectToSave) {
@@ -114,6 +140,5 @@ public class RxJavaCosmosDBOperationsImpl implements RxJavaCosmosDBOperations {
     public <T> Observable<T> query(String query) {
         return null;
     }
-
 
 }
