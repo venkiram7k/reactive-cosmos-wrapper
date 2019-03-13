@@ -2,7 +2,10 @@ package com.data.cosmosdb.repository;
 
 import com.data.cosmosdb.core.RxJavaCosmosDBOperations;
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.repository.util.ReactiveWrapperConverters;
+import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import rx.Observable;
@@ -10,8 +13,10 @@ import rx.Single;
 
 import java.io.Serializable;
 
+@Repository
 public class SimpleReactiveCosmosDBRepository<T, ID extends Serializable> implements ReactiveCosmosDBRepository<T, ID>{
 
+    private static Logger log = LoggerFactory.getLogger(SimpleReactiveCosmosDBRepository.class);
 
     private final RxJavaCosmosDBOperations operations;
 
@@ -45,6 +50,8 @@ public class SimpleReactiveCosmosDBRepository<T, ID extends Serializable> implem
 
     @Override
     public Mono<T> findById(ID id) {
+
+        log.info("insied find by Id with id = {}",id);
         return mapMono(operations.findById(id.toString()).toSingle());
     }
 
