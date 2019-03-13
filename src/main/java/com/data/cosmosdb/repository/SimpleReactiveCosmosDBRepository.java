@@ -126,4 +126,8 @@ public class SimpleReactiveCosmosDBRepository<T, ID extends Serializable> implem
     public Mono<Void> deleteAll() {
         return null;
     }
+
+    public Flux<T> query(){
+        return null;
+    }
 }

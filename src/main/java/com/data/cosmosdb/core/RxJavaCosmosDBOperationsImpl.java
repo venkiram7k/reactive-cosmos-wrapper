@@ -110,4 +110,10 @@ public class RxJavaCosmosDBOperationsImpl implements RxJavaCosmosDBOperations {
         return (Observable<T>) queryObservable;
     }
 
+    @Override
+    public <T> Observable<T> query(String query) {
+        return null;
+    }
+
+
 }

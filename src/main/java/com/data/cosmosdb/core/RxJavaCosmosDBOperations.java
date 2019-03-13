@@ -12,4 +12,6 @@ public interface RxJavaCosmosDBOperations {
 
     <T> Observable<T> findById(String documentLink);
 
+    <T> Observable<T> query(String query);
+
 }
